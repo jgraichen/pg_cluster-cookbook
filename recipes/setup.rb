@@ -81,42 +81,25 @@ setup_items.each do |setup|
 
   setup["users"].each do |user|
 
-    create_user_command = begin
-      if user['superuser']
-        "sudo -u postgres createuser -s #{user['username']};"
-      else
-        "sudo -u postgres createuser #{user['username']};"
-      end
-    end
-
-    set_user_password = begin
-        "sudo -u postgres psql -c \"ALTER USER #{user['username']} " +
-        "WITH PASSWORD '#{user['password']}';\""
-    end
-
-    bash "create_user" do
-      user "root"
-      code <<-EOH
-        #{create_user_command} #{set_user_password}
-      EOH
-      not_if "sudo -u postgres psql -c \"\\du\" | grep #{user['username']}"
+    create_pg_user user['username'] do
+      username user['username']
+      password user['password']
+      superuser user['superuser']
+      host user['host']
+      port user['port']
     end
   end
 
   setup["databases"].each do |db|
 
-    create_database_command = begin
-      "sudo -u postgres createdb -E #{db['encoding']} -O #{db['owner']} " +
-      "--locale #{db['locale']} -T #{db['template']} #{db['name']}"
+    create_pg_database db['name'] do
+      template db['template']
+      owner db['owner']
+      encoding db['encoding']
+      locale db['locale']
+      host db['host']
+      post db['port']
     end
-
-    bash "create_database" do
-      user "root"
-      code <<-EOH
-        #{create_database_command}
-      EOH
-      not_if "sudo -u postgres psql -l | grep #{db['name']}"
-    end
-  end # End DB setup
+  end
 
 end
