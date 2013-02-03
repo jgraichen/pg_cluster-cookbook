@@ -3,10 +3,12 @@
 # TYPE      DATABASE    USER        CIDR-ADDRESS        METHOD
 local       all         all                             md5
 
-<% node.postgresql.hba.each do |h| %>
-<%= "#{h[:type] || "host"} #{h[:database] || "all"} #{h[:user] || "all".ljust(16)} #{h[:address].ljust(24)} #{h[:method]}"%>
+<% @hba.each do |h| %>
+<%= "#{(h[:type] || "host").ljust(8)} #{h[:database] || "all"} #{h[:user] || "all".ljust(16)} #{h[:address].ljust(24)} #{h[:method]}"%>
 <% end %>
 
-<% node.postgresql.standby_ips.each do |ip| %>
+<% if @standby['ips'] %>
+<% @standby.ips.each do |ip| %>
 host        replication all         <%= ip -%>/32       trust
+<% end %>
 <% end %>

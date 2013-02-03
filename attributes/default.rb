@@ -127,15 +127,15 @@ default[:postgresql][:wal_sender_delay] = "1s"
 default[:postgresql][:wal_keep_segments] = 0
 default[:postgresql][:vacuum_defer_cleanup_age] = 0
 default[:postgresql][:replication_timeout] = "60s"
-# If you want to do synchronous streaming replication, 
-# profide a string containing a comma-separated list of 
+# If you want to do synchronous streaming replication,
+# profide a string containing a comma-separated list of
 # node names for "synchronous_standby_names"
-default[:postgresql][:synchronous_standby_names] = nil 
+default[:postgresql][:synchronous_standby_names] = nil
 # list of IP addresses for standby nodes
-default[:postgresql][:standby_ips] = [] 
+default[:postgresql][:standby_ips] = []
 
 # Standby Servers
-default[:postgresql][:standby] = false # Is this a standby?
+default[:postgresql][:standby] = {:allow => false} # Is this a standby?
 default[:postgresql][:master_ip] = nil # MUST Be specified in the role
 # None of the below settings get written unless the above is set to "true"
 default[:postgresql][:hot_standby] = "off"
@@ -150,3 +150,12 @@ default[:postgresql][:hot_standby_feedback] = "off"
 default[:postgresql][:setup_items] = []
 default[:postgresql][:databag] = "postgresql" # name of the data bag containing
                                               # setup items.
+
+default[:postgresql]["config_dir"] = "/etc/postgresql"
+default[:postgresql]["data_dir"] = "/var/run/postgresql"
+default[:postgresql]["log_dir"] = "/var/log/postgresql"
+default[:postgresql]["locale"] = "en_US.UTF-8"
+default[:postgresql]["lc"] = {}
+
+
+default[:postgresql]["config"] = {}

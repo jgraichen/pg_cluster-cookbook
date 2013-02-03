@@ -87,54 +87,32 @@ service "postgresql" do
   action :nothing
 end
 
-directory "#{node[:postgresql][:dir]}" do
-  owner "postgres"
-  group "postgres"
-  mode 0600
-  recursive true
-  action :create
-end
-
-template "#{node[:postgresql][:dir]}/postgresql.conf" do
-  source "debian.postgresql.conf.erb"
-  owner "postgres"
-  group "postgres"
-  mode 0600
-  notifies :restart, resources(:service => "postgresql")
-end
-
-if node[:postgresql][:standby]
-  # This goes in the data directory; where data is stored
-  node_name = Chef::Config[:node_name]
-  master_ip = node[:postgresql][:master_ip]
-  template "/var/lib/postgresql/#{node[:postgresql][:version]}/main/recovery.conf" do
-    source "recovery.conf.erb"
-    owner "postgres"
-    group "postgres"
-    mode 0600
-    variables(
-      :primary_conninfo => "host=#{master_ip} application_name=#{node_name}",
-      :trigger_file => "/var/lib/postgresql/#{node[:postgresql][:version]}/main/trigger"
-    )
-    notifies :restart, resources(:service => "postgresql")
+node["postgresql"]["clusters"].each() do |cluster_name, config|
+  pg_cluster cluster_name do
+    version config["version"] || node["postgresql"]["version"]
+    standby config["standby"] || node["postgresql"]["standby"]
+    locale config["locale"] || node["postgresql"]["locale"]
+    config config
+    host config[:host]
+    port config[:port]
   end
 end
 
 # Copy data files from master to standby. Should only happen once.
-if node[:postgresql][:master] && (not node[:postgresql][:standby_ips].empty?)
-  node[:postgresql][:standby_ips].each do |address|
-    bash "Copy Master data files to Standby" do
-      user "root"
-      cwd "/var/lib/postgresql/#{node[:postgresql][:version]}/main/"
-      code <<-EOH
-        invoke-rc.d postgresql stop
-        rsync -av --exclude=pg_xlog * #{address}:/var/lib/postgresql/#{node[:postgresql][:version]}/main/
-        touch .initial_transfer_complete
-        invoke-rc.d postgresql start
-      EOH
-      not_if do
-        File.exists?("/var/lib/postgresql/#{node[:postgresql][:version]}/main/.initial_transfer_complete")
-      end
-    end
-  end
-end
+# if node[:postgresql][:master] && (not node[:postgresql][:standby_ips].empty?)
+#   node[:postgresql][:standby_ips].each do |address|
+#     bash "Copy Master data files to Standby" do
+#       user "root"
+#       cwd "/var/lib/postgresql/#{node[:postgresql][:version]}/main/"
+#       code <<-EOH
+#         invoke-rc.d postgresql stop
+#         rsync -av --exclude=pg_xlog * #{address}:/var/lib/postgresql/#{node[:postgresql][:version]}/main/
+#         touch .initial_transfer_complete
+#         invoke-rc.d postgresql start
+#       EOH
+#       not_if do
+#         File.exists?("/var/lib/postgresql/#{node[:postgresql][:version]}/main/.initial_transfer_complete")
+#       end
+#     end
+#   end
+# end

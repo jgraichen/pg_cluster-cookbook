@@ -40,66 +40,68 @@
 # }
 # --------------------------------------
 
+node["postgresql"]["clusters"].each() do |name, config|
 
-# Fetch the setup items from the Databag; It contains things like Datase users,
-# passwords, DB names and encoding.
-setup_items = []
-node['postgresql']['setup_items'].each do |itemname|
-  databag = node['postgresql']['databag']
-  if Chef::Config[:solo]
-    i = data_bag_item(databag,  itemname.gsub(/[.]/, '-'))
-    setup_items << i
-  else
-    item = "id:#{itemname}"
-
-    search(databag, item) do |i|
+  # Fetch the setup items from the Databag; It contains things like Datase users,
+  # passwords, DB names and encoding.
+  setup_items = []
+  config['setup_items'].each do |itemname|
+    databag = node['postgresql']['databag']
+    if Chef::Config[:solo]
+      i = data_bag_item(databag,  itemname.gsub(/[.]/, '-'))
       setup_items << i
-    end
-  end
-end
+    else
+      item = "id:#{itemname}"
 
-# We use a mix of psql commands and SQL statements to create users.
-#
-# To Create a User:
-#     sudo -u postgres createuser -s some_user
-#
-# To set their password:
-#     sudo -u postgres psql -c "ALTER USER some_user WITH PASSWORD 'secret';"
-#
-# To create a Database
-#     sudo -u postgres createdb -E UTF8 -O some_user \
-#          -T template0 database_name --local=en_US.utf8
-#
-# To make these idempotent, we test for existing users/databases;
-# Test for existing DB:
-#     sudo -u postgres psql -l | grep database_name
-#
-# Test for existing Users
-#     sudo -u postgres psql -c "\du" | grep some_user
-
-setup_items.each do |setup|
-
-  setup["users"].each do |user|
-
-    create_pg_user user['username'] do
-      username user['username']
-      password user['password']
-      superuser user['superuser']
-      host user['host']
-      port user['port']
+      search(databag, item) do |i|
+        setup_items << i
+      end
     end
   end
 
-  setup["databases"].each do |db|
+  # We use a mix of psql commands and SQL statements to create users.
+  #
+  # To Create a User:
+  #     sudo -u postgres createuser -s some_user
+  #
+  # To set their password:
+  #     sudo -u postgres psql -c "ALTER USER some_user WITH PASSWORD 'secret';"
+  #
+  # To create a Database
+  #     sudo -u postgres createdb -E UTF8 -O some_user \
+  #          -T template0 database_name --local=en_US.utf8
+  #
+  # To make these idempotent, we test for existing users/databases;
+  # Test for existing DB:
+  #     sudo -u postgres psql -l | grep database_name
+  #
+  # Test for existing Users
+  #     sudo -u postgres psql -c "\du" | grep some_user
 
-    create_pg_database db['name'] do
-      template db['template']
-      owner db['owner']
-      encoding db['encoding']
-      locale db['locale']
-      host db['host']
-      post db['port']
+  setup_items.each do |setup|
+
+    setup["users"].each do |user|
+
+      create_pg_user user['username'] do
+        username user['username']
+        password user['password']
+        superuser user['superuser']
+        host config["host"] || "127.0.0.1"
+        port config["port"]
+      end
     end
-  end
 
+    setup["databases"].each do |db|
+
+      create_pg_database db['name'] do
+        template db['template']
+        owner db['owner']
+        encoding db['encoding']
+        locale db['locale']
+        host config["host"] || "127.0.0.1"
+        port config["port"]
+      end
+    end
+
+  end
 end
