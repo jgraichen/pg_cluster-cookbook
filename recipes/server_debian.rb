@@ -69,16 +69,16 @@ when "ubuntu"
     # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
     # Is this because of the PPA? And is this still the case?
   when node['platform_version'].to_f <= 10.04 && node['postgresql']['version'].to_f < 9.0
-    service_name "postgresql-#{node['postgresql']['version']}"
+    service_name = "postgresql-#{node['postgresql']['version']}"
   else
-    service_name "postgresql"
+    service_name = "postgresql"
   end
 when "debian"
   case
   when node['platform_version'].to_f <= 5.0
-    service_name "postgresql-#{node['postgresql']['version']}"
+    service_name = "postgresql-#{node['postgresql']['version']}"
   else
-    service_name "postgresql"
+    service_name = "postgresql"
   end
 end
 
