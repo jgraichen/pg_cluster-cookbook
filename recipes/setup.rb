@@ -86,7 +86,7 @@ node["postgresql"]["clusters"].each() do |name, config|
         username user['username']
         password user['password']
         superuser user['superuser']
-        host config["host"] || "127.0.0.1"
+        host config["host"]
         port config["port"]
       end
     end
@@ -98,7 +98,7 @@ node["postgresql"]["clusters"].each() do |name, config|
         owner db['owner']
         encoding db['encoding']
         locale db['locale']
-        host config["host"] || "127.0.0.1"
+        host config["host"]
         port config["port"]
       end
     end

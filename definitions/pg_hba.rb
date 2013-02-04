@@ -12,17 +12,17 @@
 
 define :pg_hba,
        :name => nil,
-       :version => "8.4",
+       :pg_version => nil,
        :cluster => nil,
        :cookbook => "postgresql",
        :config => {},
        :stand_by => {},
        :action => :create,
-       :stand_by_ips => {}  do
+       :stand_by_ips => {} do
 
+  Chef::Log.info("Creating pg_hba for cluster #{params[:name]} - #{params[:pg_version]}")
   config = params[:config] || node["postgresql"]["hba"]
-  name = params[:name]
-  path = "#{node[:postgresql][:config_dir]}/#{params[:version]}/#{name}/pg_hba.conf"
+  path = "#{node[:postgresql][:config_dir]}/#{params[:pg_version]}/#{params[:name]}/pg_hba.conf"
 
   template path do
     source "pg_hba.conf.erb"

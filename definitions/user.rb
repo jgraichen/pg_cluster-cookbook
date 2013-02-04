@@ -18,26 +18,27 @@ define :create_pg_user,
        :port => nil do
 
   username = params[:username] || params[:name]
+  port = params[:port]
 
   user_command = begin
                    if params[:superuser]
-                     "sudo -u postgres createuser -s #{username};"
+                     "sudo -u postgres createuser -h #{node[:postgresql][:data_run]} -p #{port} -s #{username};"
                    else
-                     "sudo -u postgres createuser #{username};"
+                     "sudo -u postgres createuser -h #{node[:postgresql][:data_run]} -p #{port} #{username};"
                    end
 
                  end
 
   set_password_command = begin
-                           "sudo -u postgres psql -c \"ALTER USER #{username} " +
+                           "sudo -u postgres psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"ALTER USER #{username} " +
                              "WITH PASSWORD '#{params[:password]}';\""
                          end
 
-  bash "create_user" do
+  bash "create_user-#{username}-#{port}" do
     user "root"
     code <<-EOH
         #{user_command} #{set_password_command}
       EOH
-    not_if "sudo -u postgres psql -c \"\\du\" | grep #{username}"
+    not_if "sudo -u postgres psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"\\du\" | grep #{username}"
   end
 end

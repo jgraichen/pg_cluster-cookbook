@@ -152,10 +152,44 @@ default[:postgresql][:databag] = "postgresql" # name of the data bag containing
                                               # setup items.
 
 default[:postgresql]["config_dir"] = "/etc/postgresql"
-default[:postgresql]["data_dir"] = "/var/run/postgresql"
+default[:postgresql]["data_dir"] = "/var/lib/postgresql"
+default[:postgresql]["data_run"] = "/var/run/postgresql"
 default[:postgresql]["log_dir"] = "/var/log/postgresql"
 default[:postgresql]["locale"] = "en_US.UTF-8"
 default[:postgresql]["lc"] = {}
 
 
-default[:postgresql]["config"] = {}
+default[:postgresql]["config"] = {
+  "connection" => {
+    "max_connections" => 100
+  },
+  "authentication" => {
+#    "ssl" => "true",
+#    "ssl_cert_key" => "/etc/ssl/certs/ssl-cert-snakeoil.pem",
+#    "ssl_key_file" => "/etc/ssl/private/ssl-cert-snakeoil.key"
+
+
+  },
+  "resource_usage" => {
+    "shared_buffers" => "24MB"
+  },
+  "ahead_log" => {},
+  "replication" => {},
+  "query_tuning" => {},
+  "logging" => {
+    "log_line_prefix" => "%t ",
+    "log_timezone" => "localtime"
+  },
+  "autovacuum" => {},
+  "client_connection" => {
+    "datastyle" => "iso, mdy",
+    "timezone" => "localtime",
+    "lc_messages" => "en_US",
+    "lc_monetary" => "en_US",
+    "lc_numeric" => "en_US",
+    "lc_time" => "en_US",
+    "default_text_search_config" => "pg_catalog.english"
+  },
+  "lock_management" => {},
+  "error_handling" => {}
+}

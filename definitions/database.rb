@@ -19,14 +19,16 @@ define :create_pg_database,
        :host => nil,
        :port => nil do
 
-  create_database_command = "sudo -u postgres createdb -E #{params[:encoding]} -O #{params[:owner]} " +
+  port = params[:port]
+
+  create_database_command = "sudo -u postgres createdb -h #{node[:postgresql][:data_run]} -p #{port} -E #{params[:encoding]} -O #{params[:owner]} " +
     "--locale #{params[:locale]} -T #{params[:template]} #{params[:name]}"
 
-  bash "create_database" do
+  bash "create_database-#{params[:name]}-#{port}" do
     user "root"
     code <<-EOH
         #{create_database_command}
       EOH
-    not_if "sudo -u postgres psql -l | grep #{params[:name]}"
+    not_if "sudo -u postgres psql -l -h #{node[:postgresql][:data_run]} -p #{port} | grep #{params[:name]}"
   end
 end

@@ -22,15 +22,33 @@
 # https://launchpad.net/~pitti/+archive/postgresql
 
 # NOTE: This requires the "apt" recipe
+# case node["platform"]
+# when "ubuntu"
+#   apt_repository "postgresql" do
+#     uri "http://ppa.launchpad.net/pitti/postgresql/ubuntu"
+#     distribution node['lsb']['codename']
+#     components ["main"]
+#     keyserver "keyserver.ubuntu.com"
+#     key "8683D8A2"
+#     action :add
+#     notifies :run, resources(:execute => "apt-get update"), :immediately
+#   end
+# end
+
 case node["platform"]
-when "ubuntu"
+when "ubuntu", "debian"
   apt_repository "postgresql" do
-    uri "http://ppa.launchpad.net/pitti/postgresql/ubuntu"
-    distribution node['lsb']['codename']
+    uri "deb http://apt.postgresql.org/pub/repos/apt/"
+    distribution "#{node['lsb']['codename']}-pgdg"
     components ["main"]
-    keyserver "keyserver.ubuntu.com"
-    key "8683D8A2"
-    action :add
-    notifies :run, resources(:execute => "apt-get update"), :immediately
+    key "http://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc"
   end
+
+  apt_preference "pgdg" do
+    pin "release o=apt.postgresql.org"
+    pin_priority "500"
+  end
+
+  package "pgdg-keyring"
+
 end

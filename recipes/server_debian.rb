@@ -63,29 +63,49 @@ if node.default[:postgresql][:ssl] == 'true' &&
   end
 end
 
-
-service "postgresql" do
-  case node['platform']
-  when "ubuntu"
-    case
+case node['platform']
+when "ubuntu"
+  case
     # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
     # Is this because of the PPA? And is this still the case?
-    when node['platform_version'].to_f <= 10.04 && node['postgresql']['version'].to_f < 9.0
-      service_name "postgresql-#{node['postgresql']['version']}"
-    else
-      service_name "postgresql"
-    end
-  when "debian"
-    case
-    when node['platform_version'].to_f <= 5.0
-      service_name "postgresql-#{node['postgresql']['version']}"
-    else
-      service_name "postgresql"
-    end
+  when node['platform_version'].to_f <= 10.04 && node['postgresql']['version'].to_f < 9.0
+    service_name "postgresql-#{node['postgresql']['version']}"
+  else
+    service_name "postgresql"
   end
-  supports :restart => true, :status => true, :reload => true
+when "debian"
+  case
+  when node['platform_version'].to_f <= 5.0
+    service_name "postgresql-#{node['postgresql']['version']}"
+  else
+    service_name "postgresql"
+  end
+end
+
+
+service "postgresql" do
+  service_name service_name
+  start_command "/etc/init.d/#{service_name} start"
+  stop_command "/etc/init.d/#{service_name} stop"
+  status_command "/etc/init.d/#{service_name} status"
+  restart_command "/etc/init.d/#{service_name} restart"
+  reload_command "/etc/init.d/#{service_name} reload"
+  supports :restart => true, :status => true, :reload => true, :stop => true, :restart => true
   action :nothing
 end
+
+case node['platform']
+when "ubuntu"
+
+  if node['platform_version'].to_f <= 10.04 && node['postgresql']['version'].to_f < 9.0
+    # ln /etc/passwd /tmp/passwd
+    link "/etc/init.d/postgresql" do
+      to "/etc/init.d/postgresql-#{node["postgresql"]["verstion"]}"
+      link_type :symbolic
+    end
+  end
+end
+
 
 node["postgresql"]["clusters"].each() do |cluster_name, config|
   pg_cluster cluster_name do
