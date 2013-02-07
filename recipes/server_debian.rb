@@ -85,13 +85,14 @@ end
 
 service "postgresql" do
   service_name service_name
-  start_command "/etc/init.d/#{service_name} start"
-  stop_command "/etc/init.d/#{service_name} stop"
-  status_command "/etc/init.d/#{service_name} status"
-  restart_command "/etc/init.d/#{service_name} restart"
-  reload_command "/etc/init.d/#{service_name} reload"
+#   start_command "/etc/init.d/#{service_name} start"
+#   stop_command "/etc/init.d/#{service_name} stop"
+# #  status_command "/etc/init.d/#{service_name} status"
+#   restart_command "/etc/init.d/#{service_name} restart"
+#   reload_command "/etc/init.d/#{service_name} reload"
   supports :restart => true, :status => true, :reload => true, :stop => true, :restart => true
   action :nothing
+
 end
 
 case node['platform']
@@ -100,7 +101,7 @@ when "ubuntu"
   if node['platform_version'].to_f <= 10.04 && node['postgresql']['version'].to_f < 9.0
     # ln /etc/passwd /tmp/passwd
     link "/etc/init.d/postgresql" do
-      to "/etc/init.d/postgresql-#{node["postgresql"]["verstion"]}"
+      to "/etc/init.d/postgresql-#{node["postgresql"]["version"]}"
       link_type :symbolic
     end
   end

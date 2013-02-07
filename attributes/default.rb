@@ -182,7 +182,7 @@ default[:postgresql]["config"] = {
   },
   "autovacuum" => {},
   "client_connection" => {
-    "datastyle" => "iso, mdy",
+    "datestyle" => "iso, mdy",
     "timezone" => "localtime",
     "lc_messages" => "en_US",
     "lc_monetary" => "en_US",
