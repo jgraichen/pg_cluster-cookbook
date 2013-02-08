@@ -82,10 +82,13 @@ node["postgresql"]["clusters"].each() do |name, config|
 
     setup["users"].each do |user|
 
-      create_pg_user user['username'] do
+      pg_user user['username'] do
         username user['username']
         password user['password']
         superuser user['superuser']
+        create_role user['create_role']
+        create_db user['create_db']
+        encrypted user['encrypted']
         host config["host"]
         port config["port"]
       end
@@ -93,7 +96,7 @@ node["postgresql"]["clusters"].each() do |name, config|
 
     setup["databases"].each do |db|
 
-      create_pg_database db['name'] do
+      pg_database db['name'] do
         template db['template']
         owner db['owner']
         encoding db['encoding']

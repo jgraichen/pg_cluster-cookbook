@@ -10,7 +10,7 @@
 # :github: http://github.com/Lispython/chef-postgresql
 #
 
-define :create_pg_database,
+define :pg_database,
        :name => nil,
        :owner => nil,
        :locale => "en_US.UTF-8",
@@ -23,6 +23,8 @@ define :create_pg_database,
 
   create_database_command = "sudo -u postgres createdb -h #{node[:postgresql][:data_run]} -p #{port} -E #{params[:encoding]} -O #{params[:owner]} " +
     "--locale #{params[:locale]} -T #{params[:template]} #{params[:name]}"
+
+  Chef::Log.info("Creating database by command #{create_database_command}")
 
   bash "create_database-#{params[:name]}-#{port}" do
     user "root"

@@ -33,6 +33,7 @@ define :pg_cluster,
   hba_file = "#{config_path}/pg_hba.conf"
   config_file = "#{config_path}/postgresql.conf"
   data_run = node[:postgresql]["data_run"]
+  server_key = File.join(data_dir, 'server.key')
 
   config = Chef::Mixin::DeepMerge.merge(node[:postgresql]["config"].to_hash, params[:config][:config])
   standby = params[:standby] || {}
@@ -64,6 +65,22 @@ define :pg_cluster,
     end
   end
 
+  postgresql_service = service "postgresql" do
+    service_name service_name
+    #   start_command "/etc/init.d/#{service_name} start"
+    #   stop_command "/etc/init.d/#{service_name} stop"
+    #   status_command "/etc/init.d/#{service_name} status"
+    #   restart_command "/etc/init.d/#{service_name} restart"
+    #   reload_command "/etc/init.d/#{service_name} reload"
+    supports(:restart => true,
+             :status => true,
+             :reload => true,
+             :stop => true,
+             :restart => true)
+    action :stop
+  end
+
+
   template "#{config_file}" do
     source "postgresql.conf.erb"
     owner "postgres"
@@ -79,6 +96,25 @@ define :pg_cluster,
               :data_dir => data_dir,
               :data_run => data_run)
     action :create
+    notifies :restart, "service[postgresql]", :immediately
+  end
+
+  if config["authentication"][:ssl] == 'true' &&
+      params[:config].has_key?(:ssl_password)
+
+    bash 'generate-ssl-keys-#{params[:name]-#{params[:port]}' do
+      user 'postgres'
+      group 'postgres'
+      cwd data_dir
+      # Steps from http://www.howtoforge.com/postgresql-ssl-certificates
+      code <<-EOF
+      openssl genrsa -des3 -passout pass:#{params[:config][:ssl_password]} -out server.key 1024;
+      openssl rsa -passin pass:#{params[:config][:ssl_password]} -in server.key -out server.key;
+      chmod 400 server.key;
+      openssl req -new -key server.key -days 3650 -out server.crt -x509 -subj '/C=PH/ST=Metro Manila/L=NA/O=Stiltify/CN=stiltify.com/emailAddress=hello@stiltify.com';
+    EOF
+      not_if { File.exists?(server_key) }
+    end
   end
 
 
@@ -107,6 +143,8 @@ define :pg_cluster,
     variables(:mode => params[:start_config],
               :cluster => params[:name],
               :version => params[:version])
+    notifies :restart, "service[postgresql]", :immediately
+
   end
 
   # Default PostgreSQL install has 'ident' checking on unix user 'postgres'
@@ -137,7 +175,6 @@ echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{params[:config][:password][:post
     only_if do
       ::File.exist?("#{config_file}")
     end
-    notifies :reload, resources(:service => "postgresql"), :immediately
+    notifies :restart, "service[postgresql]", :immediately
   end
-
 end

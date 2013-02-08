@@ -83,7 +83,7 @@ when "debian"
 end
 
 
-service "postgresql" do
+postgresql_service = service "postgresql" do
   service_name service_name
 #   start_command "/etc/init.d/#{service_name} start"
 #   stop_command "/etc/init.d/#{service_name} stop"
