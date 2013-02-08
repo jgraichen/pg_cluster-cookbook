@@ -20,7 +20,7 @@
 case node["platform"]
 when "ubuntu", "debian"
   apt_repository "postgresql" do
-    uri "deb http://apt.postgresql.org/pub/repos/apt/"
+    uri "http://apt.postgresql.org/pub/repos/apt/"
     distribution "#{node['lsb']['codename']}-pgdg"
     components ["main"]
     key "http://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc"
