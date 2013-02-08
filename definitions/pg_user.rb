@@ -24,18 +24,18 @@ define :pg_user,
   port = params[:port]
 
   user_options = []
-  user_options << params[:superuser] ? '--superuser' : '--no-superuser'
-  user_options << params[:create_db] ? '--createdb' : '--no-createdb'
-  user_options << params[:create_role] ? '--createrole' : '--no-createrole'
-  user_options << params[:encrypted] ? '--encrypted' : '--unencrypted'
+  user_options.push(params[:superuser] ? '--superuser' : '--no-superuser')
+  user_options.push(params[:create_db] ? '--createdb' : '--no-createdb')
+  user_options.push(params[:create_role] ? '--createrole' : '--no-createrole')
+  user_options.push(params[:encrypted] ? '--encrypted' : '--unencrypted')
 
   user_command = begin
-                   "sudo -u postgres createuser -h #{node[:postgresql][:data_run]} -p #{port} #{user_options.join(' ')} #{username};"
+                   "createuser -h #{node[:postgresql][:data_run]} -p #{port} #{user_options.join(' ')} #{username};"
                  end
   Chef::Log.info("Creating user by command #{user_command}")
 
   set_password_command = begin
-                           "sudo -u postgres psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"ALTER USER #{username} " +
+                           "psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"ALTER USER #{username} " +
                              "WITH PASSWORD '#{params[:password]}';\""
                          end
 
@@ -43,10 +43,11 @@ define :pg_user,
 
 
   bash "create_user-#{username}-#{port}" do
-    user "root"
+    user "postgres"
     code <<-EOH
         #{user_command} #{set_password_command}
       EOH
-    not_if "sudo -u postgres psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"\\du\" | grep #{username}"
+    not_if 'echo "SELECT usename FROM pg_catalog.pg_user where pg_user.usename=\'#{username}\'" | psql -h #{node[:postgresql][:data_run]} -p #{port} -t -A'
+    #not_if "psql -h #{node[:postgresql][:data_run]} -p #{port} -c \"\\du\" | grep #{username}"
   end
 end
