@@ -1,9 +1,10 @@
-#/postgresql.conf.
+# -*- coding: utf-8 -*-
+#
 # Cookbook Name:: postgresql
 # Recipe:: server
 #
 # Author:: Joshua Timberman (<joshua@opscode.com>)
-# Author:: Lamont Granquist (<lamont@opscode.com>)
+# Author:: Lamont Granquist (<lamont@opscode.com>)#
 # Copyright 2009-2011, Opscode, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,29 +20,65 @@
 # limitations under the License.
 #
 
-::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
+Chef::Log.info("Install postgresql servers")
+node[:postgresql][:clusters].collect{|key, value|
+  [value["version"], value["extra_packages"]]}.each do |version, extra_packages|
 
-include_recipe "postgresql::client"
+  Chef::Log.info("Process postgresql v#{version}")
+  case node['platform']
+  when "ubuntu"
+    case
+      # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
+      # Is this because of the PPA? And is this still the case?
+    when node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
+    end
+  when "debian"
+    case
+    when node['platform_version'].to_f <= 5.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
+    end
+  end
 
-# randomly generate postgres password
-node.set_unless[:postgresql][:password][:postgres] = secure_password
-node.save unless Chef::Config[:solo]
-
-case node[:postgresql][:version]
-when "8.3"
-  node.default[:postgresql][:ssl] = "off"
-when "8.4"
-  node.default[:postgresql][:ssl] = "true"
-when "9.1"
-  node.default[:postgresql][:ssl] = "true"
+  postgresql "postgresql-#{version}" do
+    version version
+    extra_packages extra_packages
+    provider node["postgresql"]["provider"]
+    action :install
+  end
 end
 
-# Include the right "family" recipe for installing the server
-# since they do things slightly differently.
-case node.platform
-when "redhat", "centos", "fedora", "suse", "scientific", "amazon"
-  include_recipe "postgresql::server_redhat"
-when "debian", "ubuntu"
-  include_recipe "postgresql::server_debian"
+
+node["postgresql"]["clusters"].each() do |cluster_name, config|
+  pg_cluster cluster_name do
+    version config["version"] || node["postgresql"]["version"]
+    standby config["standby"] || node["postgresql"]["standby"]
+    locale config["locale"] || node["postgresql"]["locale"]
+    config config
+    host config[:host]
+    port config[:port]
+  end
 end
 
+# Copy data files from master to standby. Should only happen once.
+# if node[:postgresql][:master] && (not node[:postgresql][:standby_ips].empty?)
+#   node[:postgresql][:standby_ips].each do |address|
+#     bash "Copy Master data files to Standby" do
+#       user "root"
+#       cwd "/var/lib/postgresql/#{node[:postgresql][:version]}/main/"
+#       code <<-EOH
+#         invoke-rc.d postgresql stop
+#         rsync -av --exclude=pg_xlog * #{address}:/var/lib/postgresql/#{node[:postgresql][:version]}/main/
+#         touch .initial_transfer_complete
+#         invoke-rc.d postgresql start
+#       EOH
+#       not_if do
+#         File.exists?("/var/lib/postgresql/#{node[:postgresql][:version]}/main/.initial_transfer_complete")
+#       end
+#     end
+#   end
+# end
