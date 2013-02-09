@@ -20,7 +20,6 @@
 # limitations under the License.
 #
 
-Chef::Log.info("Install postgresql servers")
 node[:postgresql][:clusters].collect{|key, value|
   [value["version"], value["extra_packages"]]}.each do |version, extra_packages|
 

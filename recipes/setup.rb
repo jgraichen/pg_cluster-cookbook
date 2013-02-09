@@ -45,6 +45,10 @@ node["postgresql"]["clusters"].each() do |name, config|
   # Fetch the setup items from the Databag; It contains things like Datase users,
   # passwords, DB names and encoding.
   setup_items = []
+  if not config['setup_items']
+    return
+  end
+
   config['setup_items'].each do |itemname|
     databag = node['postgresql']['databag']
     if Chef::Config[:solo]

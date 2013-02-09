@@ -1,7 +1,7 @@
 action :install do
   Chef::Log.info("Install postgresql server and client from postgresql apt #{new_resource.name}")
 
-  extra_packages = @new_resource.extra_packages
+  extra_packages = @new_resource.extra_packages || []
   version = @new_resource.version
   client_packages = []
 
