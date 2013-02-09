@@ -40,16 +40,16 @@
 # }
 # --------------------------------------
 
-node["postgresql"]["clusters"].each() do |name, config|
+node["postgresql"]["clusters"].each() do |cluster_config|
 
   # Fetch the setup items from the Databag; It contains things like Datase users,
   # passwords, DB names and encoding.
   setup_items = []
-  if not config['setup_items']
+  if not cluster_config['setup_items']
     return
   end
 
-  config['setup_items'].each do |itemname|
+  cluster_config['setup_items'].each do |itemname|
     databag = node['postgresql']['databag']
     if Chef::Config[:solo]
       i = data_bag_item(databag,  itemname.gsub(/[.]/, '-'))
@@ -93,8 +93,8 @@ node["postgresql"]["clusters"].each() do |name, config|
         create_role user['create_role']
         create_db user['create_db']
         encrypted user['encrypted']
-        host config["host"]
-        port config["port"]
+        host cluster_config["host"]
+        port cluster_config["port"]
       end
     end
 
@@ -105,8 +105,8 @@ node["postgresql"]["clusters"].each() do |name, config|
         owner db['owner']
         encoding db['encoding']
         locale db['locale']
-        host config["host"]
-        port config["port"]
+        host cluster_config["host"]
+        port cluster_config["port"]
       end
     end
 

@@ -20,7 +20,7 @@
 # limitations under the License.
 #
 
-node[:postgresql][:clusters].collect{|key, value|
+node[:postgresql][:clusters].collect{|value|
   [value["version"], value["extra_packages"]]}.each do |version, extra_packages|
 
   Chef::Log.info("Process postgresql v#{version}")
@@ -52,14 +52,15 @@ node[:postgresql][:clusters].collect{|key, value|
 end
 
 
-node["postgresql"]["clusters"].each() do |cluster_name, config|
-  pg_cluster cluster_name do
-    version config["version"] || node["postgresql"]["version"]
-    standby config["standby"] || node["postgresql"]["standby"]
-    locale config["locale"] || node["postgresql"]["locale"]
-    config config
-    host config[:host]
-    port config[:port]
+node["postgresql"]["clusters"].each() do |cluster_config|
+
+  pg_cluster cluster_config["name"] do
+    version cluster_config["version"] || node["postgresql"]["version"]
+    standby cluster_config["standby"] || node["postgresql"]["standby"]
+    locale cluster_config["locale"] || node["postgresql"]["locale"]
+    config cluster_config
+    host cluster_config[:host]
+    port cluster_config[:port]
   end
 end
 
