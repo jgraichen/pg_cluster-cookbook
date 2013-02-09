@@ -185,6 +185,7 @@ For users and database creation add ``recipe[postgresql::setup]`` after server
 installation recipes.
 
 Cluster creation:
+
     # /etc/postgresql/#{node["postgresql"]["version"]}/my_cluster_name/
     pg_cluster "my_cluster_name" do
         version node["postgresql"]["version"]
