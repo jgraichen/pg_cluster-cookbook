@@ -70,15 +70,15 @@ action :install do
     end
   end
 
-  case node['platform']
-  when "ubuntu"
-    if node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
-      link "/etc/init.d/postgresql" do
-        to "/etc/init.d/postgresql-#{version}"
-        link_type :symbolic
-      end
-    end
-  end
+  # case node['platform']
+  # when "ubuntu"
+  #   if node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
+  #     link "/etc/init.d/postgresql" do
+  #       to "/etc/init.d/postgresql-#{version}"
+  #       link_type :symbolic
+  #     end
+  #   end
+  # end
 
   postgresql_service = service "postgresql-#{version}" do
     service_name "postgresql-#{version}"

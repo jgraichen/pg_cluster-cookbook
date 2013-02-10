@@ -24,24 +24,6 @@ node[:postgresql][:clusters].collect{|value|
   [value["version"], value["extra_packages"]]}.each do |version, extra_packages|
 
   Chef::Log.info("Process postgresql v#{version}")
-  case node['platform']
-  when "ubuntu"
-    case
-      # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
-      # Is this because of the PPA? And is this still the case?
-    when node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
-      service_name = "postgresql-#{version}"
-    else
-      service_name = "postgresql"
-    end
-  when "debian"
-    case
-    when node['platform_version'].to_f <= 5.0
-      service_name = "postgresql-#{version}"
-    else
-      service_name = "postgresql"
-    end
-  end
 
   postgresql "postgresql-#{version}" do
     version version

@@ -64,26 +64,47 @@ action :install do
     end
   end
 
+  # case node['platform']
+  # when "ubuntu"
+  #   if node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
+  #     link "/etc/init.d/postgresql" do
+  #       to "/etc/init.d/postgresql-#{version}"
+  #       link_type :symbolic
+  #     end
+  #   end
+  # end
+
   case node['platform']
   when "ubuntu"
-    if node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
-      link "/etc/init.d/postgresql" do
-        to "/etc/init.d/postgresql-#{version}"
-        link_type :symbolic
-      end
+    case
+      # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
+      # Is this because of the PPA? And is this still the case?
+    when node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
+    end
+  when "debian"
+    case
+    when node['platform_version'].to_f <= 5.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
     end
   end
 
   postgresql_service = service "postgresql-#{version}" do
-    service_name "postgresql-#{version}"
-    #   start_command "/etc/init.d/#{service_name} start"
-    #   stop_command "/etc/init.d/#{service_name} stop"
-    # #  status_command "/etc/init.d/#{service_name} status"
-    #   restart_command "/etc/init.d/#{service_name} restart"
-    #   reload_command "/etc/init.d/#{service_name} reload"
-    supports :restart => true, :status => true, :reload => true, :stop => true, :restart => true
-    action :nothing
-
+    service_name service_name
+    start_command "/etc/init.d/#{service_name} start #{version}"
+    stop_command "/etc/init.d/#{service_name} stop #{version}"
+    status_command "/etc/init.d/#{service_name} status #{version}"
+    restart_command "/etc/init.d/#{service_name} restart #{version}"
+    reload_command "/etc/init.d/#{service_name} reload #{version}"
+    supports(:restart => true,
+             :status => true,
+             :reload => true,
+             :stop => true,
+             :restart => true)
+    action :start
   end
-
 end

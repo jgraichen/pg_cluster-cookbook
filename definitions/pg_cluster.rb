@@ -24,11 +24,12 @@ define :pg_cluster,
 
   Chef::Log.info("Creating #{params[:name]} on #{params[:version]}")
 
+  version = params[:version]
 
-  config_path = "#{node[:postgresql][:config_dir]}/#{params[:version]}/#{params[:name]}"
+  config_path = "#{node[:postgresql][:config_dir]}/#{version}/#{params[:name]}"
   start_file = "#{config_path}/start.conf"
-  data_dir = "#{node[:postgresql][:data_dir]}/#{params[:version]}/#{params[:name]}"
-  pid_file = "#{node[:postgresql][:data_run]}/#{params[:version]}-#{params[:name]}.pid"
+  data_dir = "#{node[:postgresql][:data_dir]}/#{version}/#{params[:name]}"
+  pid_file = "#{node[:postgresql][:data_run]}/#{version}-#{params[:name]}.pid"
   ident_file = "#{config_path}/pg_ident.conf"
   hba_file = "#{config_path}/pg_hba.conf"
   config_file = "#{config_path}/postgresql.conf"
@@ -49,12 +50,12 @@ define :pg_cluster,
   cluster_options << "--port=#{params[:config][:port]}" if params[:config][:port]
 
   create_cluster = begin
-                     "pg_createcluster #{cluster_options.join(' ')} #{params[:version]} #{params[:name]}"
+                     "pg_createcluster #{cluster_options.join(' ')} #{version} #{params[:name]}"
                    end
 
   Chef::Log.info("Creating postgresql cluster by #{create_cluster}")
 
-  execute "create-cluster-#{params[:version]}-#{params[:name]}" do
+  execute "create-cluster-#{version}-#{params[:name]}" do
     action :run
     user "root"
     command <<-EOH
@@ -65,13 +66,32 @@ define :pg_cluster,
     end
   end
 
-  postgresql_service = service "postgresql" do
+  case node['platform']
+  when "ubuntu"
+    case
+      # PostgreSQL 9.1 on Ubuntu 10.04 gets set up as "postgresql", not "postgresql-9.1"
+      # Is this because of the PPA? And is this still the case?
+    when node['platform_version'].to_f <= 10.04 && version.to_f < 9.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
+    end
+  when "debian"
+    case
+    when node['platform_version'].to_f <= 5.0
+      service_name = "postgresql-#{version}"
+    else
+      service_name = "postgresql"
+    end
+  end
+
+  postgresql_service = service "postgresql-#{version}" do
     service_name service_name
-    #   start_command "/etc/init.d/#{service_name} start"
-    #   stop_command "/etc/init.d/#{service_name} stop"
-    #   status_command "/etc/init.d/#{service_name} status"
-    #   restart_command "/etc/init.d/#{service_name} restart"
-    #   reload_command "/etc/init.d/#{service_name} reload"
+    start_command "/etc/init.d/#{service_name} start #{version}"
+    stop_command "/etc/init.d/#{service_name} stop #{version}"
+    status_command "/etc/init.d/#{service_name} status #{version}"
+    restart_command "/etc/init.d/#{service_name} restart #{version}"
+    reload_command "/etc/init.d/#{service_name} reload #{version}"
     supports(:restart => true,
              :status => true,
              :reload => true,
@@ -79,7 +99,6 @@ define :pg_cluster,
              :restart => true)
     action :stop
   end
-
 
   template "#{config_file}" do
     source "postgresql.conf.erb"
@@ -89,14 +108,14 @@ define :pg_cluster,
     variables(:port => params[:config][:port],
               :config => config,
               :cluster_name => params[:name],
-              :version => params[:version],
+              :version => version,
               :pid_file => pid_file,
               :ident_file => ident_file,
               :hba_file => hba_file,
               :data_dir => data_dir,
               :data_run => data_run)
     action :create
-    notifies :restart, "service[postgresql]", :immediately
+    notifies :restart, "service[postgresql-#{version}]", :immediately
   end
 
   if config["authentication"][:ssl] == 'true' &&
@@ -142,8 +161,8 @@ define :pg_cluster,
     cookbook params[:cookbook]
     variables(:mode => params[:start_config],
               :cluster => params[:name],
-              :version => params[:version])
-    notifies :restart, "service[postgresql]", :immediately
+              :version => version)
+    notifies :restart, "service[postgresql-#{version}]", :immediately
 
   end
 
@@ -156,7 +175,7 @@ define :pg_cluster,
     code <<-EOH
 echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{params[:config][:password][:postgres]}';" | psql -h #{node[:postgresql][:data_run]} -p #{params[:port]}
   EOH
-    #only_if 'pg_lsclusters -h | awk -F" " \'{ print $1 $2 }\' | grep "#{params[:name]}" | grep "#{params[:version]}"'
+    #only_if 'pg_lsclusters -h | awk -F" " \'{ print $1 $2 }\' | grep "#{params[:name]}" | grep "#{version}"'
     only_if "invoke-rc.d postgresql status | grep #{params[:name]}" # make sure server is actually running
     not_if "echo '\\connect' | PGPASSWORD=#{params[:config]['password']['postgres']} psql --username=postgres --no-password  -h #{node[:postgresql][:data_run]} -p #{params[:port]} "
     action :run
@@ -171,10 +190,10 @@ echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{params[:config][:password][:post
     variables(:hba => params[:config][:hba] || node[:postgresql][:hba],
               :standby => standby,
               :cluster => params[:name],
-              :version => params[:version])
+              :version => version)
     only_if do
       ::File.exist?("#{config_file}")
     end
-    notifies :restart, "service[postgresql]", :immediately
+    notifies :restart, "service[postgresql-#{version}]", :immediately
   end
 end
