@@ -34,7 +34,7 @@ action :install do
     end
   end
 
-  if version.to_f >=9.2
+  if version.to_f >=9.1
     client_packages.push("libpq5")
     client_packages.push("libpq-dev")
     client_packages.push("postgresql-client-common")
