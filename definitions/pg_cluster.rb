@@ -97,7 +97,7 @@ define :pg_cluster,
              :reload => true,
              :stop => true,
              :restart => true)
-    action :stop
+    action :nothing
   end
 
   template "#{config_file}" do
