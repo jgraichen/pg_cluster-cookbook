@@ -21,7 +21,10 @@ action :install do
       pin_priority "500"
     end
     package "pgdg-keyring"
+  end
 
+  case node["platform"]
+  when "ubuntu"
     # This repository included fresh libpq
     apt_repository "postgresql-pitti-ppa" do
       uri "http://ppa.launchpad.net/pitti/postgresql/ubuntu"
