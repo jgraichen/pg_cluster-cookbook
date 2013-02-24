@@ -91,8 +91,6 @@ local   all         postgres                          ident
 
 # Database administrative login by Unix domain socket
 # TYPE      DATABASE    USER        CIDR-ADDRESS        METHOD
-local       all         all                             md5
-
 <% @hba.each do |h| %>
 <%= "#{(h[:type] || "host").ljust(8)} #{(h[:database] || "all").ljust(16)} #{(h[:user] || "all").ljust(16)} #{h[:address].ljust(24)} #{h[:method]}"%>
 <% end %>
